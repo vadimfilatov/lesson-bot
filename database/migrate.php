@@ -32,7 +32,7 @@ $db->exec('
         user_id INTEGER NOT NULL,
         date TEXT NOT NULL,
         level TEXT NOT NULL CHECK (level IN (\'A\', \'B\', \'C\')),
-        hours REAL NOT NULL CHECK (hours IN (0.5, 1.0, 1.5)),
+        hours REAL NOT NULL CHECK (hours > 0),
         created_at TEXT NOT NULL DEFAULT (datetime(\'now\')),
         FOREIGN KEY (user_id) REFERENCES users(id)
     )

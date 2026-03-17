@@ -61,7 +61,7 @@ class SalaryHandler
         }
 
         $rows = $this->salaryService->getSalaryByPeriod($userId, $from, $to);
-        $rate = $this->config['hourly_rate'];
+        $rates = $this->config['rates'];
 
         $monthName = $this->getMonthName($month);
 
@@ -74,16 +74,18 @@ class SalaryHandler
         }
 
         $lines = ["💰 <b>Зарплата за {$periodLabel} {$monthName} {$year}:</b>\n"];
+        $totalSum = 0.0;
         $totalHours = 0.0;
 
         foreach ($rows as $row) {
+            $rate = $rates[$row['level']] ?? 0;
             $sum = $row['total_hours'] * $rate;
             $totalHours += $row['total_hours'];
-            $lines[] = "  {$row['level']}: {$row['total_hours']}ч × {$rate}€ = {$sum}€ ({$row['lesson_count']} ур.)";
+            $totalSum += $sum;
+            $lines[] = "  {$row['level']}: {$row['total_hours']}ч × {$rate}грн = {$sum}грн ({$row['lesson_count']} ур.)";
         }
 
-        $totalSum = $totalHours * $rate;
-        $lines[] = "\n<b>Итого: {$totalHours}ч = {$totalSum}€</b>";
+        $lines[] = "\n<b>Итого: {$totalHours}ч = {$totalSum}грн</b>";
 
         $this->telegram->sendMessage($chatId, implode("\n", $lines));
     }

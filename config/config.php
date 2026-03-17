@@ -19,8 +19,12 @@ return [
         array_map('trim', explode(',', $_ENV['ALLOWED_PHONES'] ?? ''))
     ),
 
-    // Ставка за час (€)
-    'hourly_rate' => (float) ($_ENV['HOURLY_RATE'] ?? 25),
+    // Ставки за час по уровням (грн)
+    'rates' => [
+        'A' => (float) ($_ENV['RATE_A'] ?? 275),
+        'B' => (float) ($_ENV['RATE_B'] ?? 300),
+        'C' => (float) ($_ENV['RATE_C'] ?? 320),
+    ],
 
     // Часовой пояс
     'timezone' => $_ENV['TIMEZONE'] ?? 'Europe/Berlin',
