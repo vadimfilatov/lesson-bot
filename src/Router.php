@@ -76,8 +76,8 @@ class Router
         $userId = (int) $user['id'];
 
         // 4. Маршрутизация команд
-        if (str_starts_with($text, '/salary')) {
-            $args = trim(substr($text, strlen('/salary')));
+        if (str_starts_with($text, '/hours')) {
+            $args = trim(substr($text, strlen('/hours')));
             $this->salaryHandler->handle($chatId, $userId, $args);
             return;
         }
@@ -106,7 +106,7 @@ class Router
         // 6. Неизвестная команда / сообщение
         $this->telegram->sendMessage(
             $chatId,
-            "❓ Не понимаю.\n\nОтправьте урок: <b>A 1.5</b>\nИли команду: /salary /stats /undo /help"
+            "❓ Не понимаю.\n\nОтправьте урок: <b>A 1.5</b>\nИли команду: /hours /stats /undo /help"
         );
     }
 
@@ -118,14 +118,14 @@ class Router
 <b>Запись урока:</b>
   <code>A 1.5</code> — уровень A, 1.5 часа, сегодня
   <code>B 1 2026-03-15</code> — с указанием даты
+  <code>D 1</code> — A для детей
 
-<b>Уровни:</b> A, B, C
-<b>Часы:</b> 0.5, 1, 1.5
+<b>Уровни:</b> A, B, C, D (A дети)
 
 <b>Команды:</b>
-/salary — зарплата за текущий период
-/salary 1-15 — первая половина месяца
-/salary 16-31 — вторая половина
+/hours — часы за текущий период
+/hours 1-15 — первая половина месяца
+/hours 16-31 — вторая половина
 /stats — общая статистика
 /undo — отменить последний урок
 /help — эта справка

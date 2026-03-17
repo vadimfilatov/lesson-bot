@@ -21,73 +21,90 @@ class SalaryHandler
     }
 
     /**
-     * /salary — текущий период
-     * /salary 1-15 — первая половина
-     * /salary 16-31 — вторая половина
+     * /hours — текущий период
+     * /hours 1-15 — первая половина (+ отдельно 1-16)
+     * /hours 16-31 — вторая половина
      */
     public function handle(int $chatId, int $userId, string $args): void
     {
         $args = trim($args);
+        $levelNames = $this->config['levels'];
 
         $year = (int) date('Y');
         $month = (int) date('m');
+        $monthName = $this->getMonthName($month);
+        $isFirstHalf = false;
 
-        if ($args === '' || $args === '/salary') {
-            // Текущий период
+        if ($args === '' || $args === '/hours') {
             $day = (int) date('d');
-            if ($day <= 15) {
-                $from = sprintf('%04d-%02d-01', $year, $month);
-                $to = sprintf('%04d-%02d-15', $year, $month);
-                $periodLabel = "01–15";
-            } else {
-                $from = sprintf('%04d-%02d-16', $year, $month);
-                $to = date('Y-m-t');
-                $periodLabel = "16–" . date('t');
-            }
-        } elseif (preg_match('/^1\s*-\s*15$/', $args)) {
-            $from = sprintf('%04d-%02d-01', $year, $month);
-            $to = sprintf('%04d-%02d-15', $year, $month);
-            $periodLabel = "01–15";
+            $isFirstHalf = ($day <= 15);
+        } elseif (preg_match('/^1\s*-\s*1[56]$/', $args)) {
+            $isFirstHalf = true;
         } elseif (preg_match('/^16\s*-\s*3[01]$/', $args)) {
-            $from = sprintf('%04d-%02d-16', $year, $month);
-            $to = date('Y-m-t');
-            $periodLabel = "16–" . date('t');
+            $isFirstHalf = false;
         } else {
             $this->telegram->sendMessage(
                 $chatId,
-                "❌ Неверный период.\n\nИспользуйте:\n/salary — текущий период\n/salary 1-15\n/salary 16-31"
+                "❌ Неверный период.\n\nИспользуйте:\n/hours — текущий период\n/hours 1-15\n/hours 16-31"
             );
             return;
         }
 
-        $rows = $this->salaryService->getSalaryByPeriod($userId, $from, $to);
-        $rates = $this->config['rates'];
+        if ($isFirstHalf) {
+            // Период 1–15
+            $from15 = sprintf('%04d-%02d-01', $year, $month);
+            $to15 = sprintf('%04d-%02d-15', $year, $month);
+            $rows15 = $this->salaryService->getSalaryByPeriod($userId, $from15, $to15);
 
-        $monthName = $this->getMonthName($month);
+            // Период 1–16
+            $to16 = sprintf('%04d-%02d-16', $year, $month);
+            $rows16 = $this->salaryService->getSalaryByPeriod($userId, $from15, $to16);
 
-        if (empty($rows)) {
-            $this->telegram->sendMessage(
-                $chatId,
-                "📭 Нет уроков за период {$periodLabel} {$monthName} {$year}."
-            );
-            return;
+            if (empty($rows15) && empty($rows16)) {
+                $this->telegram->sendMessage($chatId, "📭 Нет уроков за 01–16 {$monthName} {$year}.");
+                return;
+            }
+
+            $lines = [];
+
+            // Блок 1–15
+            $lines[] = "🕐 <b>Часы за 01–15 {$monthName} {$year}:</b>\n";
+            $this->appendHoursBlock($lines, $rows15, $levelNames);
+
+            // Блок 1–16
+            $lines[] = "\n🕐 <b>Часы за 01–16 {$monthName} {$year}:</b>\n";
+            $this->appendHoursBlock($lines, $rows16, $levelNames);
+
+            $this->telegram->sendMessage($chatId, implode("\n", $lines));
+        } else {
+            // Период 16–конец
+            $from = sprintf('%04d-%02d-16', $year, $month);
+            $to = date('Y-m-t');
+            $periodLabel = "16–" . date('t');
+
+            $rows = $this->salaryService->getSalaryByPeriod($userId, $from, $to);
+
+            if (empty($rows)) {
+                $this->telegram->sendMessage($chatId, "📭 Нет уроков за {$periodLabel} {$monthName} {$year}.");
+                return;
+            }
+
+            $lines = ["🕐 <b>Часы за {$periodLabel} {$monthName} {$year}:</b>\n"];
+            $this->appendHoursBlock($lines, $rows, $levelNames);
+
+            $this->telegram->sendMessage($chatId, implode("\n", $lines));
         }
+    }
 
-        $lines = ["💰 <b>Зарплата за {$periodLabel} {$monthName} {$year}:</b>\n"];
-        $totalSum = 0.0;
+    private function appendHoursBlock(array &$lines, array $rows, array $levelNames): void
+    {
         $totalHours = 0.0;
-
         foreach ($rows as $row) {
-            $rate = $rates[$row['level']] ?? 0;
-            $sum = $row['total_hours'] * $rate;
+            $name = $levelNames[$row['level']] ?? $row['level'];
             $totalHours += $row['total_hours'];
-            $totalSum += $sum;
-            $lines[] = "  {$row['level']}: {$row['total_hours']}ч × {$rate}грн = {$sum}грн ({$row['lesson_count']} ур.)";
+            $lines[] = "  {$name}: {$row['total_hours']}ч ({$row['lesson_count']} ур.)";
         }
-
-        $lines[] = "\n<b>Итого: {$totalHours}ч = {$totalSum}грн</b>";
-
-        $this->telegram->sendMessage($chatId, implode("\n", $lines));
+        $lines[] = "  <b>Итого: {$totalHours}ч</b>";
     }
 
     private function getMonthName(int $month): string

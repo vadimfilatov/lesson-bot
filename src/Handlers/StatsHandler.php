@@ -21,7 +21,7 @@ class StatsHandler
      */
     public function handle(int $chatId, int $userId): void
     {
-        $rates = $this->config['rates'];
+        $levelNames = $this->config['levels'];
 
         // Статистика за всё время (по уровням)
         $allTime = $this->db->execute(
@@ -49,17 +49,14 @@ class StatsHandler
         // За всё время
         $lines[] = "<b>Все время:</b>";
         $grandTotal = 0.0;
-        $grandSum = 0.0;
         $grandCount = 0;
         foreach ($allTime as $row) {
-            $rate = $rates[$row['level']] ?? 0;
-            $sum = $row['total_hours'] * $rate;
+            $name = $levelNames[$row['level']] ?? $row['level'];
             $grandTotal += $row['total_hours'];
-            $grandSum += $sum;
             $grandCount += $row['lesson_count'];
-            $lines[] = "  {$row['level']}: {$row['total_hours']}ч × {$rate}грн ({$row['lesson_count']} ур.)";
+            $lines[] = "  {$name}: {$row['total_hours']}ч ({$row['lesson_count']} ур.)";
         }
-        $lines[] = "  <b>Всего: {$grandTotal}ч, {$grandCount} уроков = {$grandSum}грн</b>";
+        $lines[] = "  <b>Всего: {$grandTotal}ч, {$grandCount} уроков</b>";
 
         // За текущий месяц
         $monthHours = (float) ($thisMonth['total_hours'] ?? 0);
@@ -68,17 +65,7 @@ class StatsHandler
 
         $lines[] = "\n<b>{$monthName} " . date('Y') . ":</b>";
 
-        // За текущий месяц по уровням
-        $monthByLevel = $this->db->execute(
-            'SELECT level, SUM(hours) as total_hours FROM lessons
-             WHERE user_id = ? AND date BETWEEN ? AND ? GROUP BY level ORDER BY level',
-            [$userId, $monthStart, $monthEnd]
-        )->fetchAll();
-        $monthSum = 0.0;
-        foreach ($monthByLevel as $row) {
-            $monthSum += $row['total_hours'] * ($rates[$row['level']] ?? 0);
-        }
-        $lines[] = "  {$monthHours}ч, {$monthCount} уроков = {$monthSum}грн";
+        $lines[] = "  {$monthHours}ч, {$monthCount} уроков";
 
         $this->telegram->sendMessage($chatId, implode("\n", $lines));
     }

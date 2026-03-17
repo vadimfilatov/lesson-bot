@@ -27,12 +27,12 @@ class LessonHandler
         $text = trim($text);
 
         // Regex: LEVEL HOURS [DATE]
-        $pattern = '/^([ABC])\s+(\d+(?:\.\d+)?)(?:\s+(\d{4}-\d{2}-\d{2}))?$/i';
+        $pattern = '/^([ABCD])\s+(\d+(?:\.\d+)?)(?:\s+(\d{4}-\d{2}-\d{2}))?$/i';
 
         if (!preg_match($pattern, $text, $matches)) {
             $this->telegram->sendMessage(
                 $chatId,
-                "❓ Не понимаю формат.\n\nПримеры:\n<b>A 1.5</b>\n<b>B 1</b>\n<b>C 0.5 2026-03-15</b>\n\nДопустимые уровни: A, B, C"
+                "❓ Не понимаю формат.\n\nПримеры:\n<b>A 1.5</b>\n<b>B 1</b>\n<b>C 0.5 2026-03-15</b>\n<b>D 1</b> — A для детей\n\nУровни: A, B, C, D (A дети)"
             );
             return;
         }
@@ -78,7 +78,7 @@ class LessonHandler
      */
     public static function isLessonMessage(string $text): bool
     {
-        return (bool) preg_match('/^[ABC]\s+\d+(?:\.\d+)?/i', trim($text));
+        return (bool) preg_match('/^[ABCD]\s+\d+(?:\.\d+)?/i', trim($text));
     }
 
     private function validateDate(string $date): ?string

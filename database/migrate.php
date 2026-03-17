@@ -31,7 +31,8 @@ $db->exec('
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         date TEXT NOT NULL,
-        level TEXT NOT NULL CHECK (level IN (\'A\', \'B\', \'C\')),
+        level TEXT NOT NULL CHECK (level IN (\'A\', \'B\', \'C\', \'D\')),
+        -- D = A для детей
         hours REAL NOT NULL CHECK (hours > 0),
         created_at TEXT NOT NULL DEFAULT (datetime(\'now\')),
         FOREIGN KEY (user_id) REFERENCES users(id)
