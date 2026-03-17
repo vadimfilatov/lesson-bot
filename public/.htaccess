@@ -1,0 +1,5 @@
+RewriteEngine On
+
+# Все запросы направляем на index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [L]

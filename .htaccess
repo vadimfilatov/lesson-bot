@@ -1,0 +1,14 @@
+# Запретить прямой доступ к .env, .sqlite, конфигам и исходникам
+<FilesMatch "\.(env|sqlite|md|php)$">
+    Require all denied
+</FilesMatch>
+
+# Запретить листинг директорий
+Options -Indexes
+
+# Разрешить только public/index.php
+<Files "index.php">
+    <If "%{REQUEST_URI} =~ m#/public/index\.php$#">
+        Require all granted
+    </If>
+</Files>
